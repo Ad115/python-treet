@@ -1,9 +1,30 @@
-from typing import (Optional, List, Dict, 
-                    Any, Iterable, Sequence, 
-                    Tuple, TypeVar, Callable)
+"""
+A simple function `parse_newick` to parse tree structures specified in the 
+Newick format (NHX supported). The function allows to customize the final
+representation, be it lists, dicts or a custom Tree class.
+
+Usage
+-----
+```
+    def tree_as_dict(label, children, distance, features):
+        if children:
+            return {label: children}
+        else:
+            return label
+
+    parse_newick('(A,(B,C));', aggregator=tree_as_dict)
+
+    # Output -> {'': ['A', {'': ['B', 'C']}]}
+```
+"""
+
+from typing import (Optional, List, Any, Sequence, Tuple, TypeVar, Callable)
 from functools import partial
 
-def _find_closing(string: str, start=1, pair='()') -> int:
+def _find_closing(
+        string: str, 
+        start: int = 1, 
+        pair: Sequence[str] = '()') -> int:
     """Find the first closing unmatched parenthesis from the start index.
     The `pair` argument allows to specify diferent opening/closing types
     of parenthesis.
@@ -29,7 +50,7 @@ _find_closing_parenthesis = partial(_find_closing, pair='()')
 _find_closing_brackets = partial(_find_closing, pair='[]')
 # ---
 
-def _parts_of_subtree(newick) -> Tuple[str, str, str, str]:
+def _parts_of_subtree(newick: str) -> Tuple[str, str, str, str]:
     """
     A subtree consists of:
         children, label, branch length/support, comments/features
@@ -58,7 +79,7 @@ def _parts_of_subtree(newick) -> Tuple[str, str, str, str]:
     return children, label.strip(), length, comment
 # ---
 
-def _next_node_end(nodes_str: str):
+def _next_node_end(nodes_str: str) -> int:
     nodes_str = nodes_str.strip()
 
     current_end = 0
@@ -117,6 +138,7 @@ def _simple_feature(feat): return feat
 Distance = TypeVar('Distance')
 Feature = TypeVar('Feature')
 Tree = TypeVar('Tree')
+
 def parse_newick_subtree(
         newick: str, 
         aggregator: Callable[[str, Sequence[Tree], Distance, Feature], Tree],
@@ -153,6 +175,12 @@ def parse_newick(
     )
 # ---
 
+
+"""
+--------------------------------------------------------------------------------
+Usage and tests
+--------------------------------------------------------------------------------
+"""
 
 def test_parse_newick():
 
