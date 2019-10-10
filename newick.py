@@ -8,7 +8,6 @@ def _find_closing(string: str, start=1, pair='()') -> int:
     The `pair` argument allows to specify diferent opening/closing types
     of parenthesis.
     """
-    #print(f"Searching for closing parenthesis for string: '{string[start:]}', pair={pair}")
     opening = pair[0]
     closing = pair[1]
 
@@ -54,7 +53,7 @@ def _parts_of_subtree(newick) -> Tuple[str, str, str, str]:
         label, length = rest.split(':', maxsplit=1)
     else:
         label = rest
-        length = 1.
+        length = ''
 
     return children, label.strip(), length, comment
 # ---
@@ -89,7 +88,7 @@ def _next_node_end(nodes_str: str):
 # ---
 
 def _split_nodes(nodes_str: str) -> List[str]:
-    print(f"Splitting nodes: {repr(nodes_str)}")
+
     nodes_str = nodes_str.strip()
 
     if nodes_str == ',':
@@ -105,7 +104,6 @@ def _split_nodes(nodes_str: str) -> List[str]:
     else:
         node = ''
         rest = nodes_str[1:]
-    print(f"head, *rest = {repr(node)}, {repr(rest)}")
     
     if rest == ',':
         return [node, '']
@@ -113,7 +111,7 @@ def _split_nodes(nodes_str: str) -> List[str]:
     return [node] + _split_nodes(rest)
 # ---
 
-def _simple_distance(dist): return float(dist)
+def _simple_distance(dist): return float(dist) if dist else None
 def _simple_feature(feat): return feat
 
 Distance = TypeVar('Distance')
@@ -127,9 +125,7 @@ def parse_newick_subtree(
 
     parts = _parts_of_subtree(newick.strip())
     (children_str, label, distance_str, comment_str) = parts
-    print(f"Partitioned node: {repr(newick)} -> {parts}")
 
-    print(f"Children found: {repr(children_str)} -> {_split_nodes(children_str)}")
     children = [parse_newick_subtree(child_str, aggregator) 
                 for child_str in _split_nodes(children_str)]
     
@@ -160,10 +156,14 @@ def parse_newick(
 
 def test_parse_newick():
 
-    def tree_as_dict(label, children, *args):
-        return dict(label=label, children=children, features=args)
+    def tree_as_dict(label, children, distance, features):
+        return dict(
+            label=label, 
+            children=children, 
+            features=(distance, features)
+        )
 
-    def tree_as_list(label, children, *args):
+    def tree_as_list(label, children, distance, features):
         return [label, children]
 
     nwk = 'A;'
@@ -173,7 +173,7 @@ def test_parse_newick():
         {
             'label': 'A',
             'children': [], 
-            'features': (1.0, '')
+            'features': (None, '')
         }
     )
 
@@ -182,10 +182,10 @@ def test_parse_newick():
         parse_newick(nwk, tree_as_dict) 
         == 
         {
-            'label': '', 'features': (1.0, ''),
+            'label': '', 'features': (None, ''),
             'children': [
-                {'label': 'A', 'children': [], 'features': (1.0, '')},
-                {'label': 'B', 'children': [], 'features': (1.0, '')}
+                {'label': 'A', 'children': [], 'features': (None, '')},
+                {'label': 'B', 'children': [], 'features': (None, '')}
             ]
         }
     )
@@ -195,10 +195,10 @@ def test_parse_newick():
         parse_newick(nwk, tree_as_dict) 
         == 
         {
-            'label': 'root','features': (1.0, ''),
+            'label': 'root','features': (None, ''),
             'children': [
                 {
-                    'label': 'A', 'features': (1., "{'some_feature': 10}"),
+                    'label': 'A', 'features': (None, "{'some_feature': 10}"),
                     'children': []
                 },
                 {
@@ -209,7 +209,7 @@ def test_parse_newick():
                             'children': []
                         },
                         {
-                            'label': 'C', 'features': (1.0, ''), 'children': []
+                            'label': 'C', 'features': (None, ''), 'children': []
                         }
                     ]
                 }
