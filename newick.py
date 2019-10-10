@@ -54,6 +54,9 @@ def _parts_of_subtree(newick: str) -> Tuple[str, str, str, str]:
     """
     A subtree consists of:
         children, label, branch length/support, comments/features
+
+    Example:
+        '(A,B)root:10.0:[x=xx]' -> ['(A,B)', 'root', '10.0', 'x=xx']
     """
 
     children = ''
@@ -80,6 +83,15 @@ def _parts_of_subtree(newick: str) -> Tuple[str, str, str, str]:
 # ---
 
 def _next_node_end(nodes_str: str) -> int:
+    """
+    From a comma-sepparated list of newick-formatted nodes, return the final 
+    position of the first one.
+
+    Examples: 
+        '(A:1,(C[x],D))name:1.[c], (X,Y),,[xxx]' -> 23
+        '(X,Y),,[xxx]' -> 5
+        '[xxx]' -> 4
+    """
     nodes_str = nodes_str.strip()
 
     current_end = 0
@@ -109,25 +121,30 @@ def _next_node_end(nodes_str: str) -> int:
 # ---
 
 def _split_nodes(nodes_str: str) -> List[str]:
+    """
+    Separate the nodes from a comma-sepparated list.
+
+    Example:  '(a,b), , :12, c[xxx]' -> ['(a,b)', '', ':12', 'c[xxx]']
+    """
 
     nodes_str = nodes_str.strip()
 
-    if nodes_str == ',':
-        return ['', '']
     if nodes_str == '':
         return []
 
-    next_node_end = _next_node_end(nodes_str)
-    if next_node_end != -1:
-        node = nodes_str[:next_node_end+1]
-        rest = nodes_str[next_node_end+1:]
-        if rest.startswith(','): rest = rest[1:]
-    else:
-        node = ''
+    if nodes_str == ',':
+        return ['', '']
+
+    if nodes_str.startswith(','):
         rest = nodes_str[1:]
-    
-    if rest == ',':
-        return [node, '']
+        return [''] + _split_nodes(rest)
+
+    next_node_end = _next_node_end(nodes_str)
+    node = nodes_str[:next_node_end+1]
+    rest = nodes_str[next_node_end+1:]
+
+    if rest.startswith(','): 
+        rest = rest[1:]
 
     return [node] + _split_nodes(rest)
 # ---
