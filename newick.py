@@ -334,7 +334,7 @@ def parse_newick(
 --------------------------------------------------------------------------------
 Usage and tests
 --------------------------------------------------------------------------------
-To run tests: `python3 -m pytest parse_newick.py`
+To run tests: `python3 -m pytest parse_newick.py --hypothesis-show-statistics`
 To run static type check: `python3 -m mypy parse_newick.py`
 """
 
@@ -467,17 +467,19 @@ def test_parse_newick():
 
 # <-- Preparing data generators for property testing
 
-import hypothesis.strategies as st
+from hypothesis.strategies import (text, characters, builds, 
+                                   SearchStrategy, deferred, lists)
 
-labels = st.from_regex(r'[a-zA-Z._-]*', fullmatch=True)
-distances = st.from_regex(r'(:[0-9.e+-]+)?', fullmatch=True)
-comments = st.from_regex(r'(\[[^][]+\])?', fullmatch=True)
+labels = text(characters(['Lu', 'Ll', 'Nd'], whitelist_characters='.-_'))
+distances = text(characters(['Nd'], whitelist_characters='e.-'))
+comments = text(characters(blacklist_characters='[]'))
 
-def leaf_builder(label, distance, comment): 
-    return label + distance + comment
+def leaf_builder(label, distance, comment):
+    distance_str = (':' + distance) if distance else ''
+    comment_str = ('[' + comment + ']') if comment else ''
+    return label + distance_str + comment_str
 
-def node_builder(children, label, distance, comment):
-    return children + label + distance + comment
+leafs = builds(leaf_builder, labels, distances, comments)
 
 def children_builder(node_list):
     if node_list:
@@ -485,26 +487,30 @@ def children_builder(node_list):
     else:
         return ''
 
-def tree_builder(newick_node):
-    return newick_node + ';'
-    
-
-leafs = st.builds(leaf_builder, labels, distances, comments)
-
-newick_nodes: st.SearchStrategy
-children = st.deferred(lambda:
-    st.builds(children_builder, st.lists(newick_nodes, min_size=2))
+newick_nodes: SearchStrategy
+children = deferred(lambda:
+    builds(children_builder, lists(newick_nodes, min_size=2))
 )
+
+def node_builder(children, label, distance, comment):
+    distance_str = (':' + distance) if distance else ''
+    comment_str = ('[' + comment + ']') if comment else ''
+    return children + label + distance_str + comment_str
 
 newick_nodes = (
-    st.builds(node_builder, children, labels, distances, comments) | leafs
+      builds(node_builder, children, labels, distances, comments) 
+    | leafs
 )
 
-newick_trees = st.builds(tree_builder, newick_nodes)
+def tree_builder(newick_node):
+    return newick_node + ';'
+
+newick_trees = builds(tree_builder, newick_nodes)
+
 
 # <-- Property testing
 
-from hypothesis import given, note
+from hypothesis import given, note, settings
 
 def tree_as_dict(label, children, distance, features):
     return {
@@ -534,6 +540,7 @@ def dict_tree_to_newick(dict_tree, root_node=False):
 
     return children_str + label + distance_str + features_str + end
 
+@settings(max_examples=500)
 @given(newick_trees)
 def test_newick_decoding_can_be_inverted(newick):
     parsed_tree = parse_newick(newick, tree_as_dict, distance_parser=str)
