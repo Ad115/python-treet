@@ -456,12 +456,12 @@ def test_parse_newick():
     
     assert (
         parse_newick(
-            'A[&&NHX:conf=0.01];',
+            'A[&&NHX:conf=0.01:key=value];',
             aggregator=tree_builder,
             feature_parser=parse_NHX_features
         )
         ==
-        {'label': 'A', 'children': [], 'features': {'conf':'0.01'}}
+        {'label': 'A', 'children':[], 'features': {'conf':'0.01','key':'value'}}
     )
 
 
