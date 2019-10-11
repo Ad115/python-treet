@@ -16,6 +16,38 @@ Usage
 
     # Output -> {'': ['A', {'': ['B', 'C']}]}
 ```
+
+The function allows to customize the parsing of the raw feature and distance 
+strings with the keword-arguments `feature_parser` and `distance_parser`, for 
+example, to read features in the NHX (New Hampshire eXtended Newick) format, you 
+can use the following:
+```
+    def parse_NHX_features(feature_string):
+        '''
+        Example: 
+          '&&NHX:conf=0.01:name=INTERNAL' -> {'conf':'0.01', 'name': 'INTERNAL'}
+        '''
+        prefix = '&&NHX:'
+        feature_string = feature_string[len(prefix):]
+        items = feature_string.split(':')
+        key_value_pairs = (item.split('=') for item in items)
+        return dict(key_value_pairs)
+
+    def tree_builder(label, children, distance, features):
+        return {'label': label, 'children': children, 'features': features}
+    
+    parse_newick(
+        'A[&&NHX:conf=0.01:name=A];',
+        aggregator=tree_builder,
+        feature_parser=parse_NHX_features
+    )
+
+    # Output -> 
+    # {'label': 'A', 'children': [], 'features': {'conf':'0.01', 'name': 'A'}}
+```
+
+To run tests: `python3 -m pytest parse_newick.py`
+To type check: `python3 -m mypy parse_newick.py``
 """
 
 from typing import (Optional, List, Any, Sequence, Tuple, TypeVar, Callable)
@@ -25,9 +57,18 @@ def _find_closing(
         string: str, 
         start: int = 1, 
         pair: Sequence[str] = '()') -> int:
-    """Find the first closing unmatched parenthesis from the start index.
+    """
+    Find the index of the first closing parenthesis that is not matched to an 
+    opening one starting from the given `start` position. 
+
+    Example: '((),())()' -> 6
+                    ^
+
     The `pair` argument allows to specify diferent opening/closing types
     of parenthesis.
+
+    Example:
+        _find_closing_brackets = partial(_find_closing, pair='[]')
     """
     opening = pair[0]
     closing = pair[1]
@@ -47,7 +88,6 @@ def _find_closing(
 # ---
 
 _find_closing_parenthesis = partial(_find_closing, pair='()')
-_find_closing_brackets = partial(_find_closing, pair='[]')
 # ---
 
 def _parts_of_subtree(newick: str) -> Tuple[str, str, str, str]:
@@ -56,7 +96,7 @@ def _parts_of_subtree(newick: str) -> Tuple[str, str, str, str]:
         children, label, branch length/support, comments/features
 
     Example:
-        '(A,B)root:10.0:[x=xx]' -> ['(A,B)', 'root', '10.0', 'x=xx']
+        '(A,B)root:10.0[x=xx]' -> ['(A,B)', 'root', '10.0', 'x=xx']
     """
 
     children = ''
@@ -139,9 +179,13 @@ def _split_nodes(nodes_str: str) -> List[str]:
         rest = nodes_str[1:]
         return [''] + _split_nodes(rest)
 
+    if nodes_str.endswith(','):
+        rest = nodes_str[:-1]
+        return _split_nodes(rest) + ['']
+
     next_node_end = _next_node_end(nodes_str)
     node = nodes_str[:next_node_end+1]
-    rest = nodes_str[next_node_end+1:]
+    rest = nodes_str[next_node_end+1:].lstrip()
 
     if rest.startswith(','): 
         rest = rest[1:]
@@ -149,23 +193,73 @@ def _split_nodes(nodes_str: str) -> List[str]:
     return [node] + _split_nodes(rest)
 # ---
 
-def _simple_distance(dist): return float(dist) if dist else None
-def _simple_feature(feat): return feat
 
-Distance = TypeVar('Distance')
-Feature = TypeVar('Feature')
+def _simple_distance(dist: str) -> Optional[float]: 
+    return float(dist) if dist else None
+
+def _simple_feature(feat:str) -> str: 
+    return feat
+
+Distance = Any
+Feature = Any
 Tree = TypeVar('Tree')
 
 def parse_newick_subtree(
         newick: str, 
-        aggregator: Callable[[str, Sequence[Tree], Distance, Feature], Tree],
+        aggregator: Callable[[str, List[Tree], Distance, Feature], Tree],
         distance_parser: Callable[[str], Distance] = _simple_distance,
         feature_parser: Callable[[str], Feature] = _simple_feature) -> Tree:
+    """
+    Parse recursively the newick representation of a single newick node. 
+    Root and child nodes are assembled using the aggregator function.
+
+    Example: 
+    ```
+    def tree_as_list(label, children, distance, features):
+        if not children: return label
+        return children
+
+    parse_newick_subtree('(A,(B,C))', tree_as_list)
+
+    # Output -> ['A', ['B', 'C']]
+    ```
+
+    The distance parser and the feature parser allow to modify the parsing of
+    the raw strings, for example, to read features in the NHX (extended Newick) 
+    format, you can use the following:
+    ```
+    def parse_NHX_features(feature_string):
+        '''
+        Example: 
+          '&&NHX:conf=0.01:name=INTERNAL' -> {'conf':'0.01', 'name': 'INTERNAL'}
+        '''
+        prefix = '&&NHX:'
+        feature_string = feature_string[len(prefix):]
+        items = feature_string.split(':')
+        key_value_pairs = (item.split('=') for item in items)
+        return dict(key_value_pairs)
+
+    def tree_builder(label, children, distance, features):
+        return {'label': label, 'children': children, 'features': features}
+    
+    parse_newick_subtree(
+        'A[&&NHX:conf=0.01]',
+        aggregator=tree_builder,
+        feature_parser=parse_NHX_features
+    )
+
+    # Output -> 
+    # {'label': 'A', 'children': [], 'features': {'conf':'0.01'}}
+    """
 
     parts = _parts_of_subtree(newick.strip())
     (children_str, label, distance_str, comment_str) = parts
-
-    children = [parse_newick_subtree(child_str, aggregator) 
+    
+    children = [parse_newick_subtree(
+                    child_str, 
+                    aggregator, 
+                    distance_parser=distance_parser, 
+                    feature_parser=feature_parser) 
                 for child_str in _split_nodes(children_str)]
     
     features = feature_parser(comment_str)
@@ -176,9 +270,52 @@ def parse_newick_subtree(
 
 def parse_newick(
         newick: str, 
-        aggregator: Callable[[str, Sequence[Tree], Distance, Feature], Tree],
+        aggregator: Callable[[str, List[Tree], Distance, Feature], Tree],
         distance_parser: Callable[[str], Distance] = _simple_distance,
         feature_parser: Callable[[str], Feature] = _simple_feature) -> Tree:
+    """
+    Parse recursively the newick representation of a complete newick tree. 
+    Root and child nodes are assembled using the aggregator function.
+
+    Example: 
+    ```
+    def tree_as_list(label, children, distance, features):
+        if not children: return label
+        return children
+
+    parse_newick('(A,(B,C));', tree_as_list)
+
+    # Output -> ['A', ['B', 'C']]
+    ```
+
+    The distance parser and the feature parser allow to modify the parsing of
+    the raw strings, for example, to read features in the NHX (extended Newick) 
+    format, you can use the following:
+    ```
+    def parse_NHX_features(feature_string):
+        '''
+        Example: 
+          '&&NHX:conf=0.01:name=INTERNAL' -> {'conf':'0.01', 'name': 'INTERNAL'}
+        '''
+        prefix = '&&NHX:'
+        feature_string = feature_string[len(prefix):]
+        items = feature_string.split(':')
+        key_value_pairs = (item.split('=') for item in items)
+        return dict(key_value_pairs)
+
+    def tree_builder(label, children, distance, features):
+        return {'label': label, 'children': children, 'features': features}
+    
+    parse_newick(
+        'A[&&NHX:conf=0.01:name=A];',
+        aggregator=tree_builder,
+        feature_parser=parse_NHX_features
+    )
+
+    # Output -> 
+    # {'label': 'A', 'children': [], 'features': {'conf':'0.01', 'name': 'A'}}
+    ```
+    """
 
     if not newick.endswith(';'):
         raise ValueError("Tree in Newick format must end with ';'")
@@ -197,9 +334,37 @@ def parse_newick(
 --------------------------------------------------------------------------------
 Usage and tests
 --------------------------------------------------------------------------------
+To run tests: `python3 -m pytest parse_newick.py`
+To run static type check: `python3 -m mypy parse_newick.py`
 """
 
 def test_parse_newick():
+
+    def tree_as_list(label, children, distance, features):
+        if not children: return label
+        return children
+
+    nwk = "((A, B), (C, D));"
+    assert (
+        parse_newick(nwk, tree_as_list) 
+        == 
+        [['A','B'], ['C','D']]
+    )
+
+
+    nwk = "(, , );"
+    assert (
+        parse_newick(nwk, tree_as_list) 
+        == 
+        ['','','']
+    )
+
+    nwk = "((, ), , (, ));"
+    assert (
+        parse_newick(nwk, tree_as_list) 
+        == 
+        [['', ''], '', ['', '']]
+    )
 
     def tree_as_dict(label, children, distance, features):
         return dict(
@@ -207,9 +372,6 @@ def test_parse_newick():
             children=children, 
             features=(distance, features)
         )
-
-    def tree_as_list(label, children, distance, features):
-        return [label, children]
 
     nwk = 'A;'
     assert (
@@ -221,6 +383,21 @@ def test_parse_newick():
             'features': (None, '')
         }
     )
+
+    nwk = "(A,);"
+    assert (
+        parse_newick(nwk, tree_as_dict) 
+        == 
+        {
+            'label': '',
+            'children': [
+                {'label': 'A', 'children': [], 'features': (None, '')},
+                {'label': '', 'children': [], 'features': (None, '')}
+            ], 
+            'features': (None, '')
+        }
+    )
+
 
     nwk = "(A, B);"
     assert (
@@ -262,42 +439,111 @@ def test_parse_newick():
         }
     )
 
-    nwk = "((A, B), (C, D));"
+
+    def parse_NHX_features(feature_string):
+        '''
+        Example: 
+          '&&NHX:conf=0.01:name=INTERNAL' -> {'conf':'0.01', 'name': 'INTERNAL'}
+        '''
+        prefix = '&&NHX:'
+        feature_string = feature_string[len(prefix):]
+        items = feature_string.split(':')
+        key_value_pairs = (item.split('=') for item in items)
+        return dict(key_value_pairs)
+
+    def tree_builder(label, children, distance, features):
+        return {'label': label, 'children': children, 'features': features}
+    
     assert (
-        parse_newick(nwk, tree_as_list) 
-        == 
-        ['', [ 
-            ['', [
-                ['A', []],
-                ['B', []]]],
-            [ '', [
-                ['C', []],
-                ['D', []]]]
-        ]]
+        parse_newick(
+            'A[&&NHX:conf=0.01];',
+            aggregator=tree_builder,
+            feature_parser=parse_NHX_features
+        )
+        ==
+        {'label': 'A', 'children': [], 'features': {'conf':'0.01'}}
     )
 
 
-    nwk = "(, , );"
-    assert (
-        parse_newick(nwk, tree_as_list) 
-        == 
-        ['', [
-            ['', []],
-            ['', []],
-            ['', []]
-        ]]
-    )
+# <-- Preparing data generators for property testing
 
-    nwk = "((, ), (, ));"
+import hypothesis.strategies as st
+
+labels = st.from_regex(r'[a-zA-Z._-]*', fullmatch=True)
+distances = st.from_regex(r'(:[0-9.e+-]+)?', fullmatch=True)
+comments = st.from_regex(r'(\[[^][]+\])?', fullmatch=True)
+
+def leaf_builder(label, distance, comment): 
+    return label + distance + comment
+
+def node_builder(children, label, distance, comment):
+    return children + label + distance + comment
+
+def children_builder(node_list):
+    if node_list:
+        return '(' + ','.join(node_list) + ')'
+    else:
+        return ''
+
+def tree_builder(newick_node):
+    return newick_node + ';'
+    
+
+leafs = st.builds(leaf_builder, labels, distances, comments)
+
+newick_nodes: st.SearchStrategy
+children = st.deferred(lambda:
+    st.builds(children_builder, st.lists(newick_nodes, min_size=2))
+)
+
+newick_nodes = (
+    st.builds(node_builder, children, labels, distances, comments) | leafs
+)
+
+newick_trees = st.builds(tree_builder, newick_nodes)
+
+# <-- Property testing
+
+from hypothesis import given, note
+
+def tree_as_dict(label, children, distance, features):
+    return {
+        'label': label,
+        'children': children,
+        'distance': distance,
+        'features': features
+    }
+# ---
+
+def dict_tree_to_newick(dict_tree, root_node=False):
+    label = dict_tree['label']
+
+    distance = dict_tree['distance']
+    distance_str = (':' + distance) if distance else ''
+
+    features = dict_tree['features']
+    features_str = ('[' + features + ']') if features else ''
+
+    if dict_tree['children']:
+        children = (dict_tree_to_newick(child) for child in dict_tree['children'])
+        children_str = '(' + ','.join(children) + ')'
+    else:
+        children_str = ''
+
+    end = ';' if root_node else ''
+
+    return children_str + label + distance_str + features_str + end
+
+@given(newick_trees)
+def test_newick_decoding_can_be_inverted(newick):
+    parsed_tree = parse_newick(newick, tree_as_dict, distance_parser=str)
+    note(f'parsed tree: {parsed_tree}')
+
     assert (
-        parse_newick(nwk, tree_as_list) 
-        == 
-        ['', [
-            ['', [
-                    ['', []],
-                    ['', []] ]],
-            ['', [
-                    ['', []],
-                    ['', []] ]]
-        ]]
+        dict_tree_to_newick(
+            parse_newick(newick, tree_as_dict, distance_parser=str),
+            root_node=True
+        )
+        ==
+        newick
     )
