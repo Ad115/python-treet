@@ -319,6 +319,10 @@ def parse_newick(
 
     if not newick.endswith(';'):
         raise ValueError("Tree in Newick format must end with ';'")
+    if not newick.count('(') == newick.count(')'):
+        raise ValueError("Unbalanced number of parenthesis in newick tree")
+    if not newick.count('[') == newick.count(']'):
+        raise ValueError('Unbalanced number of brackets in newick tree')
 
     root = newick[:-1]
     return parse_newick_subtree(
@@ -334,11 +338,14 @@ def parse_newick(
 --------------------------------------------------------------------------------
 Usage and tests
 --------------------------------------------------------------------------------
-To run tests: `python3 -m pytest parse_newick.py --hypothesis-show-statistics`
-To run static type check: `python3 -m mypy parse_newick.py`
+To run tests: `pytest parse_newick.py --hypothesis-show-statistics`
+To run static type check: `mypy parse_newick.py`
+To run coverage analysis: 
+ `coverage run --source=. -m pytest parse_newick.py --hypothesis-show-statistics`
 """
 
-def test_parse_newick():
+
+def test_parse_newick_with_valid_input():
 
     def tree_as_list(label, children, distance, features):
         if not children: return label
@@ -469,7 +476,7 @@ def test_parse_newick():
 
 from hypothesis.strategies import (text, characters, builds, 
                                    recursive, deferred, lists)
-from string import ascii_letters, digits
+from string import ascii_letters, digits, printable
 
 labels = text(ascii_letters + digits + '.-_')
 distances = text(digits + 'e.-')
@@ -483,10 +490,7 @@ def leaf_builder(label, distance, comment):
 leafs = builds(leaf_builder, labels, distances, comments)
 
 def children_builder(node_list):
-    if node_list:
-        return '(' + ','.join(node_list) + ')'
-    else:
-        return ''
+    return '(' + ','.join(node_list) + ')'
 
 def node_builder(children, label, distance, comment):
     distance_str = (':' + distance) if distance else ''
@@ -510,7 +514,7 @@ newick_trees = builds(tree_builder, newick_nodes)
 
 # <-- Property testing
 
-from hypothesis import given, note
+from hypothesis import given, note, assume
 
 def tree_as_dict(label, children, distance, features):
     return {
