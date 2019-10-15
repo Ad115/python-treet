@@ -485,8 +485,6 @@ leafs = builds(leaf_builder, labels, distances, comments)
 def children_builder(node_list):
     if node_list:
         return '(' + ','.join(node_list) + ')'
-    else:
-        return ''
 
 def node_builder(children, label, distance, comment):
     distance_str = (':' + distance) if distance else ''
