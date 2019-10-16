@@ -14,8 +14,14 @@ Also, trees are usually represented in some fields (such as bioinformatics) in
 the newick format, which is nontrivial to parse, so this module includes a 
 function to do this.
 
-Examples
---------
+
+Usage and examples
+------------------
+
+Install from [PyPi](https://pypi.org/project/treet/):
+```
+pip install treet
+```
 
 Import the basic functions, `traverse`, `reduce` and `parse_newick`:
 
@@ -46,6 +52,16 @@ Any kind of structured data is supported, in this case, nested dictionaries:
         for node in treet.traverse(tree, children, mode='inorder')]
 
     # Output --> ['B, 'A', 'D', 'C', 'E']
+
+    def as_list(node, children):
+        if not children:
+            return node['label']
+        else:
+            return children
+
+    treet.reduce(tree, children, reduce_fn=as_list)
+
+    # Output --> ['B, ['D', 'E']]
 ```
 
 ###  Even with user-defined classes!
