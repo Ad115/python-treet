@@ -217,3 +217,24 @@ for item in treet.traverse('/usr', enter_folder, mode='breadth_first'):
 # /usr/bin/m2400w
 # ...
 ```
+
+Meta
+----
+
+**Author**: [Ad115](https://agargar.wordpress.com/) - 
+    [Github](https://github.com/Ad115/) – a.garcia230395@gmail.com
+
+Distributed under the MIT license. See [LICENSE](https://github.com/Ad115/treet/blob/master/LICENSE) more information.
+
+
+Contributing
+------------
+To run tests: `pytest treet/* --hypothesis-show-statistics --verbose`
+To run static type check: `mypy treet/*.py`
+To run coverage analysis: `coverage run --source=. -m pytest treet/* --hypothesis-show-statistics --verbose`
+
+1. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug.
+2. Fork [the repository](https://github.com/Ad115/treet/) on GitHub to start making your changes to a feature branch, derived from the **master** branch.
+3. Write a test which shows that the bug was fixed or that the feature works as expected.
+4. Send a pull request and bug the maintainer until it gets merged and published.
+
