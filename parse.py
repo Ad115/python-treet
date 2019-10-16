@@ -18,7 +18,7 @@ Usage
 ```
 
 The function allows to customize the parsing of the raw feature and distance 
-strings with the keword-arguments `feature_parser` and `distance_parser`, for 
+strings with the keyword-arguments `feature_parser` and `distance_parser`, for 
 example, to read features in the NHX (New Hampshire eXtended Newick) format, you 
 can use the following:
 ```
