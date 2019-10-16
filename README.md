@@ -19,6 +19,7 @@ Usage and examples
 ------------------
 
 Install from [PyPi](https://pypi.org/project/treet/):
+
 ```
 pip install treet
 ```
@@ -26,7 +27,8 @@ pip install treet
 Import the basic functions, `traverse`, `reduce` and `parse_newick`:
 
 ```python
-    import treet
+
+import treet
 ```
 
 ###  Use with any kind of structured tree!
@@ -35,33 +37,33 @@ Any kind of structured data is supported, in this case, nested dictionaries:
 
 ```python
 
-    tree = {
-        'label':'A', 'children':[
-            {'label':'B', 'children':[]},
-            {'label':'C', 'children': [
-                {'label':'D', 'children':[]}, 
-                {'label':'E', 'children':[]}
-            ]}
-        ]
-    }
+tree = {
+    'label':'A', 'children':[
+        {'label':'B', 'children':[]},
+        {'label':'C', 'children': [
+            {'label':'D', 'children':[]}, 
+            {'label':'E', 'children':[]}
+        ]}
+    ]
+}
 
-    def children(node):
-        return node['children']
-        
-    [node['label'] 
-        for node in treet.traverse(tree, children, mode='inorder')]
+def children(node):
+    return node['children']
 
-    # Output --> ['B, 'A', 'D', 'C', 'E']
+[node['label'] 
+    for node in treet.traverse(tree, children, mode='inorder')]
 
-    def as_list(node, children):
-        if not children:
-            return node['label']
-        else:
-            return children
+# Output --> ['B, 'A', 'D', 'C', 'E']
 
-    treet.reduce(tree, children, reduce_fn=as_list)
+def as_list(node, children):
+    if not children:
+        return node['label']
+    else:
+        return children
 
-    # Output --> ['B, ['D', 'E']]
+treet.reduce(tree, children, reduce_fn=as_list)
+
+# Output --> ['B, ['D', 'E']]
 ```
 
 ###  Even with user-defined classes!
@@ -70,33 +72,33 @@ Dump a tree in a specialized class format to a string in the newick format.
 
 ```python
 
-    class Tree:
-        def __init__(self, label, children=None):
-            self.label = label
-            self.children = children if children else []
+class Tree:
+    def __init__(self, label, children=None):
+        self.label = label
+        self.children = children if children else []
+    
+    def is_leaf(self):
+        return len(self.children) == 0
 
-        def is_leaf(self):
-            return len(self.children) == 0
+tree = Tree('A', [
+        Tree('B'),
+        Tree('C',[Tree('D'),Tree('E')])
+    ]
+)
 
-    tree = Tree('A', [
-            Tree('B'),
-            Tree('C',[Tree('D'),Tree('E')])
-        ]
-    )
+def get_children(node):
+    return node.children
 
-    def get_children(node):
-        return node.children
-
-    def node_to_newick(node, children):
-        if node.is_leaf():
-            return node.label
-        else:
-            return f"({','.join(children)})"
+def node_to_newick(node, children):
+    if node.is_leaf():
+        return node.label
+    else:
+        return f"({','.join(children)})"
 
 
-    treet.reduce(tree, get_children, node_to_newick)
-                
-    # Output --> '(B,(D,E))'
+treet.reduce(tree, get_children, node_to_newick)
+
+# Output --> '(B,(D,E))'
 ```
 
 ### Parse a newick-formatted tree structure
@@ -105,43 +107,43 @@ Assemble the Newick string to a custom data format:
 
 ```python
 
-    def parse_node_data(data_string):
-        '''
-        Example: 
-          'data1=xx,data2=yy' 
-            -> {'data1':'xx', 'data2': 'yy'}
-        '''
-        items = data_string.split(',')
-        key_value_pairs = (item.split('=') for item in items)
-        return dict(key_value_pairs)
+def parse_node_data(data_string):
+    '''
+    Example: 
+      'data1=xx,data2=yy' 
+        -> {'data1':'xx', 'data2': 'yy'}
+    '''
+    items = data_string.split(',')
+    key_value_pairs = (item.split('=') for item in items)
+    return dict(key_value_pairs)
 
-    def parse_branch_length(length_str):
-        return float(length_str) if length_str else 0.0
+def parse_branch_length(length_str):
+    return float(length_str) if length_str else 0.0
 
-    def tree_builder(label, children, branch_length, node_data):
-        return {
-            'label': label,
-            'length': branch_length,
-            'data': node_data,
-            'children': children}
-    
-    newick = "(A:0.2[dat=23,other=45], B:12.4[dat=122,other=xyz])root[x=y];"
-    
-    treet.parse_newick(
-        newick,
-        aggregator=tree_builder,
-        feature_parser=parse_node_data,
-        distance_parser=parse_branch_length
-    )
+def tree_builder(label, children, branch_length, node_data):
+    return {
+        'label': label,
+        'length': branch_length,
+        'data': node_data,
+        'children': children}
 
-    # Output ->
-    {'label': 'root', 'length':0.0, 'data': {'x':'y'},
-     'children': [
-        {'label': 'A', 'length':0.2, 'data':{'dat':'23','other':'45'}, 
-         'children': []},
-        {'label': 'B', 'length':12.4, 'data':{'dat':'122','other':'xyz'},
-         'children': []}, 
-    ]}
+newick = "(A:0.2[dat=23,other=45], B:12.4[dat=122,other=xyz])root[x=y];"
+
+treet.parse_newick(
+    newick,
+    aggregator=tree_builder,
+    feature_parser=parse_node_data,
+    distance_parser=parse_branch_length
+)
+
+# Output ->
+{'label': 'root', 'length':0.0, 'data': {'x':'y'},
+ 'children': [
+    {'label': 'A', 'length':0.2, 'data':{'dat':'23','other':'45'}, 
+     'children': []},
+    {'label': 'B', 'length':12.4, 'data':{'dat':'122','other':'xyz'},
+     'children': []}, 
+]}
 ```
 
 ### Compose to perform complex algorithms
@@ -149,43 +151,43 @@ Assemble the Newick string to a custom data format:
 Get the subtree induced by a subset of the leaves:
 
 ```python
-    tree = (('A',('B',('C','D'))),'E')
 
-    def is_leaf(node): 
-        return isinstance(node, str)
+tree = (('A',('B',('C','D'))),'E')
 
-    def get_children(node): 
-        return node if not is_leaf(node) else []
+def is_leaf(node): 
+    return isinstance(node, str)
 
-    def induced_subtree(leafs):
-        def induced_subtree_generator(node, children):
-            if children:
-                return tuple(ch for ch in children if not ch is None)
-            else:
-                return node if node in leafs else None
-        return induced_subtree_generator
+def get_children(node):
+    return node if not is_leaf(node) else []
 
-    leafs = ['B', 'D', 'E']
-    induced = treet.reduce(tree, get_children, induced_subtree(leafs))
-    print(induced)
+def induced_subtree(leafs):
+    def induced_subtree_generator(node, children):
+        if children:
+            return tuple(ch for ch in children if not ch is None)
+        else:
+            return node if node in leafs else None
+    return induced_subtree_generator
 
-    # Output --> ((('B',('D',)),),'E')
+leafs = ['B', 'D', 'E']
+induced = treet.reduce(tree, get_children, induced_subtree(leafs))
+print(induced)
+
+# Output --> ((('B',('D',)),),'E')
 
 
-    def merge_unary_nodes(node, children):
-        if is_leaf(node):
-            return node
-        
-        new_children = [
-            ch[0] if (len(ch) == 1) else ch
-            for ch in children
-        ]
-        
-        return tuple(new_children)
+def merge_unary_nodes(node, children):
+    if is_leaf(node):
+        return node
+    
+    new_children = [
+        ch[0] if (len(ch) == 1) else ch
+        for ch in children
+    ]
+    return tuple(new_children)
 
-    treet.reduce(induced, get_children, merge_unary_nodes)
+treet.reduce(induced, get_children, merge_unary_nodes)
 
-    # Output --> (('B','D'),'E')
+# Output --> (('B','D'),'E')
 ```
 
 ### Use even with filesystem paths!
