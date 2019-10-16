@@ -109,7 +109,7 @@ Assemble the Newick string to a custom data format:
             'length': branch_length,
             'data': node_data}
     
-    newick = "(A:0.2:[dat=23,other=45], B:12.4:[dat=122,other=xyz])root[x=y];"
+    newick = "(A:0.2[dat=23,other=45], B:12.4[dat=122,other=xyz])root[x=y];"
     
     treetools.parse_newick(
         newick,
