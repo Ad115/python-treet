@@ -2,7 +2,8 @@ Generic tree utilities for Python
 =================================
 
 Trees are one of the most ubiquitous data structures. It is amazing how often we 
-as programmers tend to reimplement the same algorithms for different trees.
+as programmers tend to reimplement the same algorithms for different tree 
+formats and stuctures.
 
 This module defines generic tree-traverse and tree-reduce algorithms that can be
 used with any tree-like object such as filesystem paths, lists, nested 
@@ -118,15 +119,13 @@ Assemble the Newick string to a custom data format:
     )
 
     # Output ->
-    {
-        'label': 'root', 'length':0, 'data': {'x':'y'},
-        'children': [
-            {'label': 'A', 'length':0.2, 'data':{'dat':'23','other':'45'},
-             'children': []},
-            {'label': 'B', 'length':12.4, 'data':{'dat':'122','other':'xyz'},
-             'children': []}, 
-        ]
-    }
+    {'label': 'root', 'length':0, 'data': {'x':'y'},
+     'children': [
+        {'label': 'A', 'length':0.2, 'data':{'dat':'23','other':'45'}, 
+         'children': []},
+        {'label': 'B', 'length':12.4, 'data':{'dat':'122','other':'xyz'},
+         'children': []}, 
+    ]}
 ```
 
 ### Compose to perform complex algorithms
