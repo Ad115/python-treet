@@ -72,7 +72,7 @@ Dump a tree in a specialized class format to a string in the newick format.
         return node.children
 
     def node_to_newick(node, children):
-        if is_leaf(node):
+        if node.is_leaf():
             return node.label
         else:
             return f"({','.join(children)})"
@@ -89,13 +89,13 @@ Assemble the Newick string to a custom data format:
 
 ```python
 
-    def parse_data(data_string):
+    def parse_node_data(data_string):
         '''
         Example: 
           'data1=xx,data2=yy' 
             -> {'data1':'xx', 'data2': 'yy'}
         '''
-        items = feature_string.split(',')
+        items = data_string.split(',')
         key_value_pairs = (item.split('=') for item in items)
         return dict(key_value_pairs)
 
@@ -104,22 +104,22 @@ Assemble the Newick string to a custom data format:
 
     def tree_builder(label, children, branch_length, node_data):
         return {
-            'label': label, 
-            'children': children, 
+            'label': label,
             'length': branch_length,
-            'data': node_data}
+            'data': node_data,
+            'children': children}
     
     newick = "(A:0.2[dat=23,other=45], B:12.4[dat=122,other=xyz])root[x=y];"
     
     treetools.parse_newick(
         newick,
         aggregator=tree_builder,
-        feature_parser=parse_data,
+        feature_parser=parse_node_data,
         distance_parser=parse_branch_length
     )
 
     # Output ->
-    {'label': 'root', 'length':0, 'data': {'x':'y'},
+    {'label': 'root', 'length':0.0, 'data': {'x':'y'},
      'children': [
         {'label': 'A', 'length':0.2, 'data':{'dat':'23','other':'45'}, 
          'children': []},
@@ -167,7 +167,7 @@ Get the subtree induced by a subset of the leaves:
         
         return tuple(new_children)
 
-    treetools.reduce(subtree, get_children, merge_unary_nodes)
+    treetools.reduce(induced, get_children, merge_unary_nodes)
 
     # Output --> (('B','D'),'E')
 ```
@@ -179,8 +179,9 @@ Traverse the `/usr` directory in breadth-first order:
 ```python
 from pathlib import Path
 
-def enter_folder(path_str):
-    return list(Path(path_str).iterdir()) if path.is_dir() else []
+def enter_folder(path):
+    path = Path(path)
+    return list(path.iterdir()) if path.is_dir() else []
 
 for item in treetools.traverse('/usr', enter_folder, mode='breadth_first'):
     print(item)

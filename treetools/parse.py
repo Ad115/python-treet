@@ -334,10 +334,10 @@ def parse_newick(
 --------------------------------------------------------------------------------
 Usage and tests
 --------------------------------------------------------------------------------
-To run tests: `pytest parse_newick.py --hypothesis-show-statistics`
+To run tests: `pytest parse.py --hypothesis-show-statistics --verbose`
 To run static type check: `mypy parse_newick.py`
 To run coverage analysis : 
-    `coverage run -m pytest parse_newick.py --hypothesis-show-statistics`
+    `coverage run -m pytest parse_newick.py --hypothesis-show-statistics -v`
     `coverage html`
 """
 
