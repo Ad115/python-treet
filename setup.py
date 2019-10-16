@@ -26,14 +26,14 @@ setup(
     # package, this name will be registered for you. It will determine how
     # users can install this project:
     #
-    # $ pip install treetools
+    # $ pip install treet
     #
-    # And where it will live on PyPI: https://pypi.org/project/treetools/
+    # And where it will live on PyPI: https://pypi.org/project/treet/
     #
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='treetools',  # Required
+    name='treet',  # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -46,8 +46,8 @@ setup(
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description=('Simple, small, but powerful tools to handle generic tree '
-                '(hierarchical) structures'),  # Required
+    description=('Simple, minimal, but powerful tools to handle any kind of '
+                'hierarchical (tree) structures'),  # Required
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.

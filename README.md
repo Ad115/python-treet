@@ -20,7 +20,7 @@ Examples
 Import the basic functions, `traverse`, `reduce` and `parse_newick`:
 
 ```python
-    import treetools
+    import treet
 ```
 
 ###  Use with any kind of structured tree!
@@ -43,7 +43,7 @@ Any kind of structured data is supported, in this case, nested dictionaries:
         return node['children']
         
     [node['label'] 
-        for node in treetools.traverse(tree, children, mode='inorder')]
+        for node in treet.traverse(tree, children, mode='inorder')]
 
     # Output --> ['B, 'A', 'D', 'C', 'E']
 ```
@@ -78,7 +78,7 @@ Dump a tree in a specialized class format to a string in the newick format.
             return f"({','.join(children)})"
 
 
-    treetools.reduce(tree, get_children, node_to_newick)
+    treet.reduce(tree, get_children, node_to_newick)
                 
     # Output --> '(B,(D,E))'
 ```
@@ -111,7 +111,7 @@ Assemble the Newick string to a custom data format:
     
     newick = "(A:0.2[dat=23,other=45], B:12.4[dat=122,other=xyz])root[x=y];"
     
-    treetools.parse_newick(
+    treet.parse_newick(
         newick,
         aggregator=tree_builder,
         feature_parser=parse_node_data,
@@ -150,7 +150,7 @@ Get the subtree induced by a subset of the leaves:
         return induced_subtree_generator
 
     leafs = ['B', 'D', 'E']
-    induced = treetools.reduce(tree, get_children, induced_subtree(leafs))
+    induced = treet.reduce(tree, get_children, induced_subtree(leafs))
     print(induced)
 
     # Output --> ((('B',('D',)),),'E')
@@ -167,7 +167,7 @@ Get the subtree induced by a subset of the leaves:
         
         return tuple(new_children)
 
-    treetools.reduce(induced, get_children, merge_unary_nodes)
+    treet.reduce(induced, get_children, merge_unary_nodes)
 
     # Output --> (('B','D'),'E')
 ```
@@ -183,7 +183,7 @@ def enter_folder(path):
     path = Path(path)
     return list(path.iterdir()) if path.is_dir() else []
 
-for item in treetools.traverse('/usr', enter_folder, mode='breadth_first'):
+for item in treet.traverse('/usr', enter_folder, mode='breadth_first'):
     print(item)
 
 # Output -->

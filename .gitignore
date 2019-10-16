@@ -6,4 +6,5 @@ __pycache__
 .coverage
 *.egg-info/
 dist/
+build/
 
