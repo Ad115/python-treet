@@ -63,7 +63,7 @@ setup(
     #
     # This field corresponds to the "Home-Page" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='https://github.com/Ad115/python-treetools',  # Optional
+    url='https://github.com/Ad115/python-treet',  # Optional
 
     # This should be your name or the name of the organization which owns the
     # project.
@@ -154,7 +154,7 @@ setup(
     # what's used to render the link text on PyPI.
     project_urls={  # Optional
         'Say Thanks!': 'https://saythanks.io/to/Ad115',
-        'Documentation': 'https://github.com/Ad115/python-treetools',
+        'Documentation': 'https://github.com/Ad115/python-treet',
         'Author': 'https://agargar.wordpress.com/'
     }
 )
