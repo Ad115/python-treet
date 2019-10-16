@@ -230,7 +230,9 @@ Distributed under the MIT license. See [LICENSE](https://github.com/Ad115/treet/
 Contributing
 ------------
 To run tests: `pytest treet/* --hypothesis-show-statistics --verbose`
+
 To run static type check: `mypy treet/*.py`
+
 To run coverage analysis: `coverage run --source=. -m pytest treet/* --hypothesis-show-statistics --verbose`
 
 1. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug.
