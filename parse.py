@@ -470,20 +470,21 @@ def test_parse_newick():
 
 # <-- Preparing data generators for property testing
 
-from hypothesis.strategies import (text, characters, builds, 
+from hypothesis.strategies import (text, characters,
                                    recursive, deferred, lists)
+from hypothesis.strategies import builds as build_strategy
 from string import ascii_letters, digits
 
-labels = text(ascii_letters + digits + '.-_')
-distances = text(digits + 'e.-')
-comments = text(characters(blacklist_characters='[]()'))
+Labels = text(ascii_letters + digits + '.-_')
+Distances = text(digits + 'e.-')
+Comments = text(characters(blacklist_characters='[]()'))
 
 def leaf_builder(label, distance, comment):
     distance_str = (':' + distance) if distance else ''
     comment_str = ('[' + comment + ']') if comment else ''
     return label + distance_str + comment_str
 
-leafs = builds(leaf_builder, labels, distances, comments)
+Leafs = build_strategy(leaf_builder, Labels, Distances, Comments)
 
 def children_builder(node_list):
     if node_list:
@@ -494,19 +495,19 @@ def node_builder(children, label, distance, comment):
     comment_str = ('[' + comment + ']') if comment else ''
     return children + label + distance_str + comment_str
 
-newick_nodes = recursive(
-    leafs, 
+NewickNodes = recursive(
+    Leafs, 
     lambda children: 
-        builds(node_builder, 
+        build_strategy(node_builder, 
             lists(children, min_size=2).map(children_builder), 
-            labels, distances, comments),
+            Labels, Distances, Comments),
     max_leaves=500
 )
 
 def tree_builder(newick_node):
     return newick_node + ';'
 
-newick_trees = builds(tree_builder, newick_nodes)
+NewickTrees = build_strategy(tree_builder, NewickNodes)
 
 
 # <-- Property testing
@@ -542,16 +543,14 @@ def dict_tree_to_newick(dict_tree, root_node=False):
     return children_str + label + distance_str + features_str + end
 
 
-@given(newick_trees)
+@given(NewickTrees)
 def test_newick_decoding_can_be_inverted(newick):
+
     parsed_tree = parse_newick(newick, tree_as_dict, distance_parser=str)
     note(f'parsed tree: {parsed_tree}')
 
     assert (
-        dict_tree_to_newick(
-            parse_newick(newick, tree_as_dict, distance_parser=str),
-            root_node=True
-        )
+        dict_tree_to_newick(parsed_tree, root_node=True)
         ==
         newick
     )
