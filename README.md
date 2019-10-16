@@ -16,12 +16,15 @@ function to do this.
 Examples
 --------
 
-Import the basic functions:
+Import the basic functions, `traverse`, `reduce` and `parse_newick`:
+
 ```python
     import treetools
 ```
 
 ###  Use with any kind of structured tree!
+
+Any kind of structured data is supported, in this case, nested dictionaries:
 
 ```python
 
@@ -45,6 +48,8 @@ Import the basic functions:
 ```
 
 ###  Even with user-defined classes!
+
+Dump a tree in a specialized class format to a string in the newick format.
 
 ```python
 
@@ -78,6 +83,8 @@ Import the basic functions:
 ```
 
 ### Parse a newick-formatted tree structure
+
+Assemble the Newick string to a custom data format:
 
 ```python
 
@@ -124,6 +131,8 @@ Import the basic functions:
 
 ### Compose to perform complex algorithms
 
+Get the subtree induced by a subset of the leaves:
+
 ```python
     tree = (('A',('B',('C','D'))),'E')
 
@@ -166,7 +175,9 @@ Import the basic functions:
 
 ### Use even with filesystem paths!
 
-```
+Traverse the `/usr` directory in breadth-first order:
+
+```python
 from pathlib import Path
 
 def enter_folder(path_str):
