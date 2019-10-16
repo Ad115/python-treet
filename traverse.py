@@ -109,10 +109,10 @@ Examples:
 ```
 from pathlib import Path
 
-def enter_folder(path):
-    return list(path.iterdir()) if path.is_dir() else []
+def enter_folder(path_str):
+    return list(Path(path_str).iterdir()) if path.is_dir() else []
 
-for item in tree_traverse(Path('/usr'), enter_folder, mode='breadth_first'):
+for item in tree_traverse('/usr', enter_folder, mode='breadth_first'):
     print(item)
 
 # Output -->
@@ -134,50 +134,6 @@ from collections import deque
 from typing import (Any, List, Callable, Iterable)
 
 TreeLike = Any
-Reduced = Any
-
-def tree_reduce(
-        tree_node: TreeLike, 
-        get_children: Callable[[TreeLike], List[TreeLike]], 
-        reduce_fn: Callable[[TreeLike, List[Reduced]], Reduced]
-    ) -> Reduced:
-    """
-    
-    Perform a recursive tree reduction for the tree-like object `tree_node` 
-    taken as the root. 
-    The callable `get_children` returns a list of the descendants of any node of 
-    the tree.
-
-    Example:
-    ```
-        tree = [[['A', 'B'], 'C'], ['D', ['E', 'F'],'G']]
-
-        def is_leaf(node):
-            return isinstance(node, str)
-
-        def get_children(node):
-            if is_leaf(node):
-                return []
-            else:
-                return node
-
-        def node_to_newick(node, children):
-            if is_leaf(node):
-                return node
-            else:
-                return f"({','.join(children)})"
-
-        # <--- Actual reduction
-        tree_reduce(tree, get_children, node_to_newick)
-            
-        # Output --> '(((A,B),C),(D,(E,F),G))'
-    ```
-    """
-
-    reduced_children = [tree_reduce(child, get_children, reduce_fn) 
-                        for child in get_children(tree_node)]
-    return reduce_fn(tree_node, reduced_children)
-# ---
 
 def tree_traverse(
         root: TreeLike, 
@@ -436,75 +392,6 @@ def test_inorder():
          ==
          'B,A,D,C,E'.split(',')
      )
-
-
-def test_tree_reduce_for_newick_output():
-    tree = [[['A', 'B'], 'C'], ['D', ['E', 'F'],'G']]
-
-    children_fn = (lambda node: 
-        node 
-            if isinstance(node, list) 
-            else []
-     )
-
-    def node_to_newick(node, children):
-        print("assembling node to newick form:", node)
-        return (
-            '(' + ','.join(children) + ')'
-            if children
-            else node
-        )
-
-    assert (
-        tree_reduce(tree, children_fn, node_to_newick)
-        ==
-        '(((A,B),C),(D,(E,F),G))'
-    )
-
-
-def test_tree_reduce_for_induced_subtree():
-    tree = (('A',('B',('C','D'))),'E')
-
-    children_fn = (lambda node: 
-        node 
-            if isinstance(node, tuple) 
-            else []
-     )
-
-    def induced_subtree(leafs):
-        def induced_subtree_generator(node, children):
-            print('Processing node:', node)
-            if children:
-                return tuple(ch for ch in children if not ch is None)
-            else:
-                return node if node in leafs else None
-        return induced_subtree_generator
-
-    leafs = ['B', 'D', 'E']
-    induced_subtree = tree_reduce(tree, children_fn, induced_subtree(leafs))
-    assert( 
-        induced_subtree
-        ==
-        ((('B',('D',)),),'E')
-    )
-
-    def merge_unary_nodes(node, children):
-        is_leaf = lambda node: isinstance(node, str)
-        if is_leaf(node):
-            return node
-        
-        new_children = [
-            ch[0] if (len(ch) == 1) else ch
-            for ch in children
-        ]
-        
-        return tuple(new_children)
-    
-    assert( 
-        tree_reduce(induced_subtree, children_fn, merge_unary_nodes)
-        ==
-        (('B','D'),'E')
-    )
 
 """
 Ideas for property-based testing:
