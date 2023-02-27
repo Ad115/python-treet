@@ -1,9 +1,7 @@
 Generic tree utilities for Python
 =================================
 
-Trees are one of the most ubiquitous data structures. It is amazing how often we 
-as programmers tend to reimplement the same algorithms for different tree 
-formats and stuctures.
+Trees are one of the most ubiquitous data structures.
 
 This module defines generic tree-traverse and tree-reduce algorithms that can be
 used with any tree-like object such as filesystem paths, lists, nested 
@@ -101,51 +99,6 @@ treet.reduce(tree, get_children, node_to_newick)
 # Output --> '(B,(D,E))'
 ```
 
-### Parse a newick-formatted tree structure
-
-Assemble the Newick string to a custom data format:
-
-```python
-
-def parse_node_data(data_string):
-    '''
-    Example: 
-      'data1=xx,data2=yy' 
-        -> {'data1':'xx', 'data2': 'yy'}
-    '''
-    items = data_string.split(',')
-    key_value_pairs = (item.split('=') for item in items)
-    return dict(key_value_pairs)
-
-def parse_branch_length(length_str):
-    return float(length_str) if length_str else 0.0
-
-def tree_builder(label, children, branch_length, node_data):
-    return {
-        'label': label,
-        'length': branch_length,
-        'data': node_data,
-        'children': children}
-
-newick = "(A:0.2[dat=23,other=45], B:12.4[dat=122,other=xyz])root[x=y];"
-
-treet.parse_newick(
-    newick,
-    aggregator=tree_builder,
-    feature_parser=parse_node_data,
-    distance_parser=parse_branch_length
-)
-
-# Output ->
-{'label': 'root', 'length':0.0, 'data': {'x':'y'},
- 'children': [
-    {'label': 'A', 'length':0.2, 'data':{'dat':'23','other':'45'}, 
-     'children': []},
-    {'label': 'B', 'length':12.4, 'data':{'dat':'122','other':'xyz'},
-     'children': []}, 
-]}
-```
-
 ### Compose to perform complex algorithms
 
 Get the subtree induced by a subset of the leaves:
@@ -217,6 +170,53 @@ for item in treet.traverse('/usr', enter_folder, mode='breadth_first'):
 # /usr/bin/m2400w
 # ...
 ```
+
+
+### Parse a newick-formatted tree structure
+
+Assemble the Newick string to a custom data format:
+
+```python
+
+def parse_node_data(data_string):
+    '''
+    Example: 
+      'data1=xx,data2=yy' 
+        -> {'data1':'xx', 'data2': 'yy'}
+    '''
+    items = data_string.split(',')
+    key_value_pairs = (item.split('=') for item in items)
+    return dict(key_value_pairs)
+
+def parse_branch_length(length_str):
+    return float(length_str) if length_str else 0.0
+
+def tree_builder(label, children, branch_length, node_data):
+    return {
+        'label': label,
+        'length': branch_length,
+        'data': node_data,
+        'children': children}
+
+newick = "(A:0.2[dat=23,other=45], B:12.4[dat=122,other=xyz])root[x=y];"
+
+treet.parse_newick(
+    newick,
+    aggregator=tree_builder,
+    feature_parser=parse_node_data,
+    distance_parser=parse_branch_length
+)
+
+# Output ->
+{'label': 'root', 'length':0.0, 'data': {'x':'y'},
+ 'children': [
+    {'label': 'A', 'length':0.2, 'data':{'dat':'23','other':'45'}, 
+     'children': []},
+    {'label': 'B', 'length':12.4, 'data':{'dat':'122','other':'xyz'},
+     'children': []}, 
+]}
+```
+
 
 Meta
 ----
